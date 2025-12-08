@@ -15,8 +15,8 @@ for (let i = 0; (i < boxes.length); i++) {
     const dz = other.z - box.z;
     const d = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
     distances.push({
-      box,
-      other,
+      i,
+      j,
       d
     });
   }
@@ -26,12 +26,14 @@ distances.sort((a, b) => {
   return a.d - b.d;
 });
 
-for (let i = 0; (i < connections); i++) {
-  const { box, other } = distances[i];
-  if (box.c !== other.c) {
-    for (const b of boxes) {
-      if (b.c === other.c) {
-        b.c = box.c;
+for (let index = 0; (index < connections); index++) {
+  const { i, j } = distances[index];
+  const ic = boxes[i].c;
+  const jc = boxes[j].c;
+  if (ic !== jc) {
+    for (let k = 0; (k < boxes.length); k++) {
+      if (boxes[k].c === ic) {
+        boxes[k].c = jc;
       }
     }
   }
@@ -47,7 +49,4 @@ for (const box of boxes) {
 const cIds = [...circuits.keys()];
 cIds.sort((a, b) => circuits.get(b).length - circuits.get(a).length);
 
-for (const id of cIds) {
-  console.log(circuits.get(id).length);
-}
 console.log(cIds.slice(0, 3).reduce((a, cId) => a * circuits.get(cId).length, 1));
