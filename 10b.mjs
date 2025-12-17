@@ -22,25 +22,37 @@ let total = 0;
 
 for (let { joltages, buttons } of machines) {
   console.log('machine:', joltages);
-  const state = new Array(joltages.length).fill(0);
-  buttons = buttons.toSorted((a, b) => {
-    return hungry(b) - hungry(a);
-  });
-  let machineTotal = 0;
-  for (const button of buttons) {
-    const min = Math.min(...button.map(index => joltages[index] - state[index]));
-    console.log(`${min}: ${button}`);    
-    for (const index of button) {
-      state[index] += min;
+  const result = attempt(0, 0, (new Array(joltages.length)).fill(0));
+  console.log('->', result);
+  total += result;
+  function attempt(i, presses, state) {
+    if (joltages.join(',') === state.join(',')) {
+      return presses;
     }
-    console.log(state);
-    machineTotal += min;
-  }
-  console.log(`machine total: ${machineTotal}`);
-  console.log(`final state: ${state}`);
-  total += machineTotal;
-  function hungry(button) {
-    return button.reduce((a, i) => a + ((joltages[i] > state[i]) ? 1 : 0), 0);
+    const button = buttons[i];
+    if (!button) {
+      return false;
+    }
+    // max presses is the min of the remaining joltage of the connected channels
+    const max = Math.min(...button.map(index => joltages[index] - (state[index] || 0)));
+    if (max === 0) {
+      return false;
+    }
+    // console.log(`# ${i} ${buttons[i]} ${max} ${state}`);
+    let lowest = false;
+    for (let j = 0; (j <= max); j++) {
+      const next = [...state];
+      for (const index of button) {
+        next[index] += j;
+      }
+      const result = attempt(i + 1, presses + j, next);
+      if (result !== false) {
+        if ((lowest === false) || (result < lowest)) {
+          lowest = result;
+        }
+      }
+    }
+    return lowest;
   }
 }
 
