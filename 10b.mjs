@@ -22,10 +22,14 @@ let total = 0;
 
 for (let { joltages, buttons } of machines) {
   console.log('machine:', joltages);
-  const result = attempt(0, 0, (new Array(joltages.length)).fill(0));
+  const result = attempt(0, [], (new Array(joltages.length)).fill(0));
   console.log('->', result);
-  total += result;
+  total += result.reduce((a, v) => a + v, 0);
+  
   function attempt(i, presses, state) {
+    if (presses.join(',').startsWith('2,5')) {
+      console.error('==>', presses);
+    }
     if (joltages.join(',') === state.join(',')) {
       return presses;
     }
@@ -35,24 +39,39 @@ for (let { joltages, buttons } of machines) {
     }
     // max presses is the min of the remaining joltage of the connected channels
     const max = Math.min(...button.map(index => joltages[index] - (state[index] || 0)));
-    if (max === 0) {
-      return false;
+    let min = 0;
+    for (const pi of button) {
+      let otherwise = 0;
+      otherwise += state[pi];
+      for (const [ bp, bi ] of Object.entries(buttons.slice(i + 1))) {
+        const button = buttons[bi];
+        if (button.some(bpi => bpi === pi)) {
+          // TODO Figure out how many more clicks are possible from this button, using the same
+          // max algorithm as above, add that to "otherwise"
+        }
+      }
+      // TODO work out "min" for each button by subtracting "otherwise" from the joltage
+      // TODO overall "min" is the max of the mins
     }
     // console.log(`# ${i} ${buttons[i]} ${max} ${state}`);
     let lowest = false;
+    let best;
     for (let j = 0; (j <= max); j++) {
       const next = [...state];
       for (const index of button) {
         next[index] += j;
       }
-      const result = attempt(i + 1, presses + j, next);
+      const nextPresses = [...presses, j];
+      const result = attempt(i + 1, nextPresses, next);
       if (result !== false) {
-        if ((lowest === false) || (result < lowest)) {
-          lowest = result;
+        const count = result ? result.reduce((a, v) => a + v, 0) : 0;
+        if ((lowest === false) || (count < lowest)) {
+          lowest = count;
+          best = result;
         }
       }
     }
-    return lowest;
+    return best || false;
   }
 }
 
