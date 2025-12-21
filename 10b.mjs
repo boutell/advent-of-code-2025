@@ -54,7 +54,7 @@ for (let { joltages, buttons } of machines) {
     // console.log(`# ${i} ${buttons[i]} ${max} ${state}`);
     let lowest = false;
     let best;
-    for (let j = min; (j <= max); j++) {
+    for (let j = Math.max(min, 0); (j <= max); j++) {
       const next = [...state];
       for (const index of button) {
         next[index] += j;
