@@ -27,9 +27,6 @@ for (let { joltages, buttons } of machines) {
   total += result.reduce((a, v) => a + v, 0);
   
   function attempt(i, presses, state) {
-    if (presses.join(',').startsWith('2,5')) {
-      console.error('==>', presses);
-    }
     if (joltages.join(',') === state.join(',')) {
       return presses;
     }
@@ -39,24 +36,25 @@ for (let { joltages, buttons } of machines) {
     }
     // max presses is the min of the remaining joltage of the connected channels
     const max = Math.min(...button.map(index => joltages[index] - (state[index] || 0)));
-    let min = 0;
-    for (const pi of button) {
+    // minimum presses for the button is the maximum of the minimum presses to satisfy each channel
+    const min = Math.max(...button.map(pi => {
       let otherwise = 0;
       otherwise += state[pi];
-      for (const [ bp, bi ] of Object.entries(buttons.slice(i + 1))) {
-        const button = buttons[bi];
+      for (const button of buttons.slice(i + 1)) {
         if (button.some(bpi => bpi === pi)) {
-          // TODO Figure out how many more clicks are possible from this button, using the same
+          // Figure out how many more clicks are possible from this button, using the same
           // max algorithm as above, add that to "otherwise"
+          const max = Math.min(...button.map(index => joltages[index] - (state[index] || 0)));
+          otherwise += max;
         }
       }
-      // TODO work out "min" for each button by subtracting "otherwise" from the joltage
-      // TODO overall "min" is the max of the mins
-    }
+      // Work out "min" for each button by subtracting "otherwise" from the joltage
+      return joltages[pi] - otherwise;
+    }));
     // console.log(`# ${i} ${buttons[i]} ${max} ${state}`);
     let lowest = false;
     let best;
-    for (let j = 0; (j <= max); j++) {
+    for (let j = min; (j <= max); j++) {
       const next = [...state];
       for (const index of button) {
         next[index] += j;
