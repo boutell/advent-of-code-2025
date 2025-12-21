@@ -4,6 +4,7 @@
 // produce the lowest button count.
 
 import lines from './lib/lines.mjs';
+import memoize from './lib/memoize.mjs';
 
 const data = lines();
 
@@ -21,14 +22,15 @@ const machines = data.map(datum => {
 let total = 0;
 
 for (let { joltages, buttons } of machines) {
+  const attempt = memoize(attemptBody);
   console.log('machine:', joltages);
-  const result = attempt(0, [], (new Array(joltages.length)).fill(0));
+  const result = attempt(0, (new Array(joltages.length)).fill(0));
   console.log('->', result);
-  total += result.reduce((a, v) => a + v, 0);
+  total += result;
   
-  function attempt(i, presses, state) {
+  function attemptBody(i, state) {
     if (joltages.join(',') === state.join(',')) {
-      return presses;
+      return 0;
     }
     const button = buttons[i];
     if (!button) {
@@ -53,23 +55,20 @@ for (let { joltages, buttons } of machines) {
     }));
     // console.log(`# ${i} ${buttons[i]} ${max} ${state}`);
     let lowest = false;
-    let best;
     for (let j = Math.max(min, 0); (j <= max); j++) {
       const next = [...state];
       for (const index of button) {
         next[index] += j;
       }
-      const nextPresses = [...presses, j];
-      const result = attempt(i + 1, nextPresses, next);
+      const result = attempt(i + 1, next);
       if (result !== false) {
-        const count = result ? result.reduce((a, v) => a + v, 0) : 0;
+        const count = j + result;
         if ((lowest === false) || (count < lowest)) {
           lowest = count;
-          best = result;
         }
       }
     }
-    return best || false;
+    return lowest;
   }
 }
 
